@@ -1,0 +1,26 @@
+{
+  "task": "FM-BEVYGZH-SHUFFLE-EXPERIMENT-20261109",
+  "run_at": "2026-11-09 19:25–19:29 Asia/Singapore (UTC+8)",
+  "toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13) / cargo 1.99.1, via RUSTUP_TOOLCHAIN=stable; bevy_ecs MSRV 1.95.0",
+  "versions": {"bevy_ecs": "=0.20.1", "bevy": "=0.20.1 (default-features=false)"},
+  "scope_note": "All runs use SingleThreadedExecutor set explicitly, one schedule run per process, auto_insert_apply_deferred left at default true, no Commands/deferred systems. No multi-threaded runs, no App/DefaultPlugins.",
+  "checks": [
+    {"id": 1, "claim": "shuffle_seed exists only with Cargo feature `debug`", "status": "PASS",
+     "detail": "bevy_ecs without debug: E0560/E0609 (dev profile, debug_assertions on). bevy_ecs+debug: builds in dev AND release (debug_assertions off). bevy default-features=false: E0560 without debug, cargo check OK with debug; cargo tree shows bevy debug -> bevy_internal debug -> bevy_ecs debug, and rand only present with debug.",
+     "evidence": ["logs/01-e1-ecs-nodebug-build.log", "logs/02-e2-ecs-debug-build-dev.log", "logs/03-e2-ecs-debug-build-release.log", "logs/04-e3-bevy-nodebug-check.log", "logs/05-e4-bevy-debug-check.log", "logs/06-tree-e1-ecs-nodebug.log", "logs/06-tree-e2-ecs-debug.log", "logs/06-tree-e3-bevy-nodebug.log", "logs/06-tree-e4-bevy-debug.log"]},
+    {"id": 2, "claim": "same seed + SingleThreaded => reproducible order", "status": "PASS",
+     "detail": "6 seeds (none,1,7,42,100000001,100000030) x 5 processes x 3 scenarios: 18/18 groups identical. Scenario A also matched all 8 official unit-test seed expectations + None baseline.",
+     "evidence": ["logs/10-run-experiments.log", "logs/11-analysis.log"]},
+    {"id": 3, "claim": "different seeds expose undeclared order dependency", "status": "PASS",
+     "detail": "Scenario B (produce writes Value=42, consume reads it, no ordering): seed=None runs produce before consume (saw 42, bug hidden). Over 72 seeds, 37 ran consume first (saw 0), 35 saw 42.",
+     "evidence": ["logs/10-run-experiments.log", "logs/11-analysis.log"]},
+    {"id": 4, "claim": "explicit before/after/chain preserved under all seeds", "status": "PASS",
+     "detail": "Scenario C: 73 seeds (None + 0..63 + 8 official), 73 distinct orders, 0 violations of c1<c2<c3, x<y<z.",
+     "evidence": ["logs/10-run-experiments.log", "logs/11-analysis.log"]},
+    {"id": 5, "claim": "adding consume.after(produce) removes the order bug under all scanned seeds", "status": "PASS",
+     "added": "2026-11-09 22:59 Asia/Singapore (UTC+8), follow-up run approved by captain via Firstmate 22:58",
+     "detail": "Crate e5-ecs-debug-fixed (bevy_ecs =0.20.1 + debug, SingleThreadedExecutor, rustc 1.99.1, release, --offline, Cargo.lock copied from e2). Each process runs scenario B (unchanged control) and scenario F (same systems + consume.after(produce)). Repeat: 6 seeds x 5 processes x 2 scenarios, 12/12 groups identical. Scan over 73 values (None + 0..63 + 8 official): B control reproduces E2 (None saw 42; of 72 non-None seeds 37 saw 0, 35 saw 42). F: 73/73 saw 42, consume ran before produce 0 times, 12 distinct orders.",
+     "evidence": ["logs/20-e5-ecs-debug-fixed-build-release.log", "logs/21-run-e5.log", "logs/22-analysis-e5.log", "logs/23-rustup-default-check.log"]}
+  ],
+  "not_tested": ["MultiThreadedExecutor", "auto_insert_apply_deferred=false / Commands sync points", "App/DefaultPlugins / multiple schedules", "official cargo test of bevy_ecs crate itself (equivalent graph reproduced in scenario A instead)"]
+}

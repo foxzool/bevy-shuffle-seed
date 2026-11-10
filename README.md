@@ -34,6 +34,8 @@ Bevy 0.20.1 `ScheduleBuildSettings.shuffle_seed` 的单线程复现实验。
 
 前提：已装 rustup、Python 3、bash。以下命令都在仓库根目录执行。`run-step.sh` 只对单个进程设置 `RUSTUP_TOOLCHAIN=1.99.1`，不改 rustup 全局默认；构建目录是仓库根下的 `target/`。
 
+如果机器上原本没有默认工具链，`rustup toolchain install` 会把 1.99.1 自动设为默认；不想保留时，跑完执行 `rustup default none` 还原。
+
 e1 和 e3 预期退出码 101（编译失败）。逐条执行时不要因为这个退出码停掉后面的命令。
 
 ```bash

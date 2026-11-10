@@ -1,0 +1,8 @@
+[package]
+name = "e3-bevy-nodebug"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+bevy = { version = "=0.20.1", default-features = false }   # NO `debug`
